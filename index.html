@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スマート食事＆PFCマネージャー</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --primary: #10b981;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --subtext: #64748b;
+      --p-color: #ef4444;
+      --f-color: #f59e0b;
+      --c-color: #3b82f6;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    h1 {
+      font-size: 1.2rem;
+      text-align: center;
+      margin: 4px 0 16px 0;
+    }
+    details {
+      background: #f1f5f9;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+    summary {
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .profile-grid label {
+      font-size: 0.75rem;
+      color: var(--subtext);
+      display: block;
+    }
+    .profile-grid input, .profile-grid select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.85rem;
+    }
+    .api-input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-sizing: border-box;
+      margin-top: 4px;
+    }
+    /* 今日の達成度ダッシュボード */
+    .dashboard {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .dash-cal {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .progress-bar-bg {
+      background: #e2e8f0;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .progress-bar-fill {
+      background: var(--primary);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .pfc-bars {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+    .pfc-box {
+      background: #f8fafc;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .mini-bar-bg {
+      background: #e2e8f0;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .mini-bar-fill {
+      height: 100%;
+      width: 0%;
+    }
+    /* 食事登録タブ */
+    .meal-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .upload-box {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      margin-bottom: 8px;
+    }
+    .upload-box input { display: none; }
+    .preview-container {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-top: 6px;
+      padding-bottom: 4px;
+    }
+    .preview-thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
+    .text-input-box {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+    .btn-action {
+      width: 100%;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .btn-action:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    .loading-msg {
+      display: none;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--subtext);
+      margin-top: 8px;
+    }
+    /* 記録ログ一覧 */
+    .log-list {
+      margin-top: 16px;
+    }
+    .log-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .log-meta { color: var(--subtext); font-size: 0.75rem; margin-top: 2px; }
+    .log-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-edit {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .btn-del {
+      background: #fee2e2;
+      color: #ef4444;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    /* 編集モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .modal-grid label {
+      font-size: 0.75rem;
+      color: var(--subtext);
+      display: block;
+    }
+    .modal-grid input {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.85rem;
+    }
+    /* カレンダー */
+    .calendar-section {
+      margin-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+    }
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .cal-day-head { font-weight: bold; color: var(--subtext); padding: 4px 0; }
+    .cal-cell {
+      min-height: 48px;
+      border: 1px solid #f1f5f9;
+      border-radius: 6px;
+      padding: 2px;
+      background: #fafafa;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cal-cell.today { border-color: var(--primary); background: #ecfdf5; }
+    .cal-cell.active-selected { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+    .cal-cal-text { font-size: 0.65rem; color: var(--primary); font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🥗 スマート食事＆PFCマネージャー</h1>
+
+  <!-- 設定アコーディオン -->
+  <details>
+    <summary>⚙️ プロフィール設定・APIキー</summary>
+    <div style="margin-top: 8px;">
+      <label style="font-size:0.75rem;color:var(--subtext);">Gemini APIキー</label>
+      <input type="password" id="apiKey" class="api-input" placeholder="AIzaSy...">
+    </div>
+    <div class="profile-grid">
+      <div>
+        <label>性別</label>
+        <select id="userGender">
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
+      </div>
+      <div>
+        <label>年齢</label>
+        <input type="number" id="userAge" value="30">
+      </div>
+      <div>
+        <label>身長 (cm)</label>
+        <input type="number" id="userHeight" value="172">
+      </div>
+      <div>
+        <label>体重 (kg)</label>
+        <input type="number" id="userWeight" value="68">
+      </div>
+    </div>
+    <button id="saveProfileBtn" style="width:100%; margin-top:10px; padding:6px; font-size:0.8rem; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">設定を保存して目標再計算</button>
+  </details>
+
+  <!-- 今日の集計ダッシュボード -->
+  <div class="dashboard">
+    <div class="dash-header">
+      <span style="font-size:0.85rem; font-weight:bold;" id="targetDateLabel">今日の合計</span>
+      <div>
+        <span class="dash-cal" id="totalCal">0</span>
+        <span style="font-size:0.85rem; color:var(--subtext);" id="targetCal">/ 2200 kcal</span>
+      </div>
+    </div>
+    <div class="progress-bar-bg">
+      <div id="calProgress" class="progress-bar-fill"></div>
+    </div>
+
+    <div class="pfc-bars">
+      <div class="pfc-box">
+        <div style="font-weight:bold; color:var(--p-color);">P (たんぱく質)</div>
+        <div style="font-size:0.85rem; font-weight:700;" id="pText">0 / 110g</div>
+        <div class="mini-bar-bg"><div id="pProgress" class="mini-bar-fill" style="background:var(--p-color);"></div></div>
+      </div>
+      <div class="pfc-box">
+        <div style="font-weight:bold; color:var(--f-color);">F (脂質)</div>
+        <div style="font-size:0.85rem; font-weight:700;" id="fText">0 / 60g</div>
+        <div class="mini-bar-bg"><div id="fProgress" class="mini-bar-fill" style="background:var(--f-color);"></div></div>
+      </div>
+      <div class="pfc-box">
+        <div style="font-weight:bold; color:var(--c-color);">C (炭水化物)</div>
+        <div style="font-size:0.85rem; font-weight:700;" id="cText">0 / 280g</div>
+        <div class="mini-bar-bg"><div id="cProgress" class="mini-bar-fill" style="background:var(--c-color);"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 食事記録エリア -->
+  <div class="meal-tabs">
+    <button class="tab-btn active" data-type="朝食">🌅 朝食</button>
+    <button class="tab-btn" data-type="昼食">☀️ 昼食</button>
+    <button class="tab-btn" data-type="夕食">🌙 夕食</button>
+    <button class="tab-btn" data-type="間食">☕ 間食</button>
+  </div>
+
+  <!-- 写真アップロード（任意） -->
+  <div class="upload-box" onclick="document.getElementById('imgUpload').click()">
+    <span id="uploadHint" style="font-size:0.85rem;">📷 写真を追加（任意・複数可）</span>
+    <input type="file" id="imgUpload" accept="image/*" multiple>
+    <div id="previewContainer" class="preview-container"></div>
+  </div>
+
+  <!-- テキスト入力（写真の補足 or テキスト単体入力） -->
+  <textarea id="mealTextInput" class="text-input-box" rows="2" placeholder="食事内容を入力（例: かけうどん並盛、ちくわ天、半熟玉子）※写真なしでも計算できます"></textarea>
+
+  <button id="analyzeAddBtn" class="btn-action">Geminiで分析して記録</button>
+  <div id="loadingMsg" class="loading-msg">🤖 食事内容を分析中...数秒お待ちください</div>
+
+  <!-- 本日の食事リスト -->
+  <div class="log-list" id="logList"></div>
+
+  <!-- 編集モーダル -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 style="margin-top:0;font-size:1rem;">✏️ 食事内容の修正</h3>
+      <div>
+        <label style="font-size:0.75rem;color:var(--subtext);">メニュー名</label>
+        <input type="text" id="editName" style="width:100%;padding:6px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;">
+      </div>
+      <div class="modal-grid">
+        <div>
+          <label>カロリー (kcal)</label>
+          <input type="number" id="editCal">
+        </div>
+        <div>
+          <label>たんぱく質 P (g)</label>
+          <input type="number" step="0.1" id="editP">
+        </div>
+        <div>
+          <label>脂質 F (g)</label>
+          <input type="number" step="0.1" id="editF">
+        </div>
+        <div>
+          <label>炭水化物 C (g)</label>
+          <input type="number" step="0.1" id="editC">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button id="cancelEditBtn" style="flex:1;padding:8px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;">キャンセル</button>
+        <button id="saveEditBtn" style="flex:1;padding:8px;border:none;background:var(--primary);color:#fff;border-radius:6px;font-weight:bold;cursor:pointer;">更新する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 過去履歴カレンダー -->
+  <div class="calendar-section">
+    <div class="cal-header">
+      <button id="prevMonthBtn" style="border:none;background:none;cursor:pointer;font-weight:bold;">◀</button>
+      <span id="calMonthTitle">2026年10月</span>
+      <button id="nextMonthBtn" style="border:none;background:none;cursor:pointer;font-weight:bold;">▶</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+</div>
+
+<script>
+  let currentMealType = '朝食';
+  let selectedFilesBase64 = [];
+  let viewDateStr = getTodayStr();
+  let calCurrentYearMonth = new Date();
+  let currentEditingId = null;
+
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function calculateTargets() {
+    const gender = document.getElementById('userGender').value;
+    const age = parseFloat(document.getElementById('userAge').value) || 30;
+    const height = parseFloat(document.getElementById('userHeight').value) || 170;
+    const weight = parseFloat(document.getElementById('userWeight').value) || 65;
+
+    let bmr = (gender === 'male')
+      ? 66 + (13.7 * weight) + (5.0 * height) - (6.8 * age)
+      : 655 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
+    
+    const targetCal = Math.round(bmr * 1.45);
+    const targetP = Math.round((targetCal * 0.20) / 4);
+    const targetF = Math.round((targetCal * 0.25) / 9);
+    const targetC = Math.round((targetCal * 0.55) / 4);
+
+    return { targetCal, targetP, targetF, targetC };
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    updateUI();
+    renderCalendar();
+  });
+
+  function loadSettings() {
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) document.getElementById('apiKey').value = savedKey;
+
+    const savedProf = JSON.parse(localStorage.getItem('user_profile') || '{}');
+    if (savedProf.gender) document.getElementById('userGender').value = savedProf.gender;
+    if (savedProf.age) document.getElementById('userAge').value = savedProf.age;
+    if (savedProf.height) document.getElementById('userHeight').value = savedProf.height;
+    if (savedProf.weight) document.getElementById('userWeight').value = savedProf.weight;
+  }
+
+  document.getElementById('saveProfileBtn').addEventListener('click', () => {
+    localStorage.setItem('gemini_api_key', document.getElementById('apiKey').value.trim());
+    const prof = {
+      gender: document.getElementById('userGender').value,
+      age: document.getElementById('userAge').value,
+      height: document.getElementById('userHeight').value,
+      weight: document.getElementById('userWeight').value
+    };
+    localStorage.setItem('user_profile', JSON.stringify(prof));
+    alert('設定を保存しました');
+    updateUI();
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMealType = btn.dataset.type;
+    });
+  });
+
+  // 画像アップロード
+  document.getElementById('imgUpload').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    selectedFilesBase64 = [];
+    const previewContainer = document.getElementById('previewContainer');
+    previewContainer.innerHTML = '';
+
+    for (const file of files) {
+      const base64 = await toBase64(file);
+      selectedFilesBase64.push(base64.split(',')[1]);
+
+      const img = document.createElement('img');
+      img.src = base64;
+      img.className = 'preview-thumb';
+      previewContainer.appendChild(img);
+    }
+    document.getElementById('uploadHint').innerText = `${files.length}枚の写真を選択中`;
+  });
+
+  function toBase64(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // API呼び出し & データ登録（写真＋テキスト、またはテキスト単体）
+  document.getElementById('analyzeAddBtn').addEventListener('click', async () => {
+    const key = document.getElementById('apiKey').value.trim();
+    const textInput = document.getElementById('mealTextInput').value.trim();
+
+    if (!key) {
+      alert('Gemini APIキーを設定欄に入力してください');
+      return;
+    }
+    if (!selectedFilesBase64.length && !textInput) {
+      alert('写真を選択するか、食事内容のテキストを入力してください');
+      return;
+    }
+
+    const btn = document.getElementById('analyzeAddBtn');
+    const loading = document.getElementById('loadingMsg');
+    btn.disabled = true;
+    loading.style.display = 'block';
+
+    let promptText = `提供された食事の情報から全体の栄養を推定・合算し、必ず次のJSON形式のみで出力してください。Markdown装飾不要。
+{
+  "dish_name": "料理名まとめ（例: かけうどんとちくわ天）",
+  "calories": 620,
+  "protein": 18.5,
+  "fat": 14.0,
+  "carbs": 102.0
+}`;
+
+    if (textInput) {
+      promptText += `\nユーザーからの食事テキスト・補足情報:「${textInput}」`;
+    }
+
+    const parts = [{ text: promptText }];
+    selectedFilesBase64.forEach(b64 => {
+      parts.push({ inline_data: { mime_type: "image/jpeg", data: b64 } });
+    });
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts }] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || '通信エラー');
+
+      let resText = data.candidates[0].content.parts[0].text;
+      resText = resText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(resText);
+
+      saveRecord(viewDateStr, {
+        id: Date.now(),
+        type: currentMealType,
+        name: parsed.dish_name,
+        calories: Math.round(parsed.calories),
+        protein: Math.round(parsed.protein * 10) / 10,
+        fat: Math.round(parsed.fat * 10) / 10,
+        carbs: Math.round(parsed.carbs * 10) / 10
+      });
+
+      // フォームリセット
+      selectedFilesBase64 = [];
+      document.getElementById('previewContainer').innerHTML = '';
+      document.getElementById('uploadHint').innerText = '📷 写真を追加（任意・複数可）';
+      document.getElementById('imgUpload').value = '';
+      document.getElementById('mealTextInput').value = '';
+      updateUI();
+      renderCalendar();
+    } catch (err) {
+      alert('分析に失敗しました: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      loading.style.display = 'none';
+    }
+  });
+
+  // LocalStorage 保存 & 取得
+  function getDayData(dateStr) {
+    return JSON.parse(localStorage.getItem(`meal_log_${dateStr}`) || '[]');
+  }
+
+  function saveRecord(dateStr, record) {
+    const data = getDayData(dateStr);
+    data.push(record);
+    localStorage.setItem(`meal_log_${dateStr}`, JSON.stringify(data));
+  }
+
+  function deleteRecord(dateStr, id) {
+    let data = getDayData(dateStr);
+    data = data.filter(r => r.id !== id);
+    localStorage.setItem(`meal_log_${dateStr}`, JSON.stringify(data));
+    updateUI();
+    renderCalendar();
+  }
+
+  // 編集モーダル操作
+  function openEditModal(dateStr, id) {
+    const data = getDayData(dateStr);
+    const item = data.find(r => r.id === id);
+    if (!item) return;
+
+    currentEditingId = id;
+    document.getElementById('editName').value = item.name;
+    document.getElementById('editCal').value = item.calories;
+    document.getElementById('editP').value = item.protein;
+    document.getElementById('editF').value = item.fat;
+    document.getElementById('editC').value = item.carbs;
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  document.getElementById('cancelEditBtn').addEventListener('click', () => {
+    document.getElementById('editModal').style.display = 'none';
+    currentEditingId = null;
+  });
+
+  document.getElementById('saveEditBtn').addEventListener('click', () => {
+    if (!currentEditingId) return;
+    let data = getDayData(viewDateStr);
+    const index = data.findIndex(r => r.id === currentEditingId);
+    if (index !== -1) {
+      data[index].name = document.getElementById('editName').value.trim() || data[index].name;
+      data[index].calories = Math.round(parseFloat(document.getElementById('editCal').value) || 0);
+      data[index].protein = Math.round((parseFloat(document.getElementById('editP').value) || 0) * 10) / 10;
+      data[index].fat = Math.round((parseFloat(document.getElementById('editF').value) || 0) * 10) / 10;
+      data[index].carbs = Math.round((parseFloat(document.getElementById('editC').value) || 0) * 10) / 10;
+      localStorage.setItem(`meal_log_${viewDateStr}`, JSON.stringify(data));
+    }
+    document.getElementById('editModal').style.display = 'none';
+    currentEditingId = null;
+    updateUI();
+    renderCalendar();
+  });
+
+  // UI描画
+  function updateUI() {
+    const targets = calculateTargets();
+    const records = getDayData(viewDateStr);
+
+    let sumCal = 0, sumP = 0, sumF = 0, sumC = 0;
+    records.forEach(r => {
+      sumCal += r.calories;
+      sumP += r.protein;
+      sumF += r.fat;
+      sumC += r.carbs;
+    });
+
+    document.getElementById('targetDateLabel').innerText = (viewDateStr === getTodayStr()) ? '今日の合計' : `${viewDateStr} の合計`;
+    document.getElementById('totalCal').innerText = sumCal;
+    document.getElementById('targetCal').innerText = `/ ${targets.targetCal} kcal`;
+
+    const calPct = Math.min(100, Math.round((sumCal / targets.targetCal) * 100));
+    document.getElementById('calProgress').style.width = `${calPct}%`;
+
+    document.getElementById('pText').innerText = `${sumP.toFixed(1)} / ${targets.targetP}g`;
+    document.getElementById('fText').innerText = `${sumF.toFixed(1)} / ${targets.targetF}g`;
+    document.getElementById('cText').innerText = `${sumC.toFixed(1)} / ${targets.targetC}g`;
+
+    document.getElementById('pProgress').style.width = `${Math.min(100, (sumP / targets.targetP) * 100)}%`;
+    document.getElementById('fProgress').style.width = `${Math.min(100, (sumF / targets.targetF) * 100)}%`;
+    document.getElementById('cProgress').style.width = `${Math.min(100, (sumC / targets.targetC) * 100)}%`;
+
+    const listEl = document.getElementById('logList');
+    listEl.innerHTML = '';
+    if (!records.length) {
+      listEl.innerHTML = '<div style="text-align:center; color:var(--subtext); font-size:0.8rem; padding:12px;">記録はありません</div>';
+      return;
+    }
+
+    records.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML = `
+        <div>
+          <div><strong>[${r.type}]</strong> ${r.name}</div>
+          <div class="log-meta">${r.calories} kcal | P:${r.protein}g F:${r.fat}g C:${r.carbs}g</div>
+        </div>
+        <div class="log-actions">
+          <button class="btn-edit" onclick="openEditModal('${viewDateStr}', ${r.id})">編集</button>
+          <button class="btn-del" onclick="deleteRecord('${viewDateStr}', ${r.id})">削除</button>
+        </div>
+      `;
+      listEl.appendChild(item);
+    });
+  }
+
+  // カレンダー描画
+  function renderCalendar() {
+    const year = calCurrentYearMonth.getFullYear();
+    const month = calCurrentYearMonth.getMonth();
+    document.getElementById('calMonthTitle').innerText = `${year}年${month + 1}月`;
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    days.forEach(d => {
+      const head = document.createElement('div');
+      head.className = 'cal-day-head';
+      head.innerText = d;
+      grid.appendChild(head);
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+      grid.appendChild(document.createElement('div'));
+    }
+
+    const todayStr = getTodayStr();
+
+    for (let day = 1; day <= lastDate; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      if (dateStr === todayStr) cell.classList.add('today');
+      if (dateStr === viewDateStr) cell.classList.add('active-selected');
+
+      const data = getDayData(dateStr);
+      let dayCal = data.reduce((acc, cur) => acc + cur.calories, 0);
+
+      cell.innerHTML = `
+        <div>${day}</div>
+        ${dayCal > 0 ? `<div class="cal-cal-text">${dayCal}</div>` : ''}
+      `;
+
+      cell.addEventListener('click', () => {
+        viewDateStr = dateStr;
+        updateUI();
+        renderCalendar();
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  document.getElementById('prevMonthBtn').addEventListener('click', () => {
+    calCurrentYearMonth.setMonth(calCurrentYearMonth.getMonth() - 1);
+    renderCalendar();
+  });
+  document.getElementById('nextMonthBtn').addEventListener('click', () => {
+    calCurrentYearMonth.setMonth(calCurrentYearMonth.getMonth() + 1);
+    renderCalendar();
+  });
+</script>
+
+</body>
+</html>
